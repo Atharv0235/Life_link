@@ -525,7 +525,11 @@ export default function TrackingView({ incidentPos, onBack }) {
                                                         {isSelected && i !== 0 && <span style={{ fontSize: 8, fontWeight: 700, color: '#3b82f6', background: 'rgba(59,130,246,0.15)', padding: '1px 5px', borderRadius: 4 }}>Selected</span>}
                                                     </div>
                                                     <p style={{ fontSize: 12, fontWeight: 700, color: '#e8eaed', lineHeight: 1.3 }} className="truncate">{h.name}</p>
-                                                    <p style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>{h.distance_km} km • ~{Math.ceil((h.eta_minutes || h.distance_km * 3))}m</p>
+                                                    <p style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>
+                                                        {h.distance_km} km • ~{h.eta_minutes >= 60
+                                                            ? `${Math.floor(h.eta_minutes / 60)}h ${Math.round(h.eta_minutes % 60)}m`
+                                                            : `${Math.ceil(h.eta_minutes)}m`}
+                                                    </p>
                                                 </button>
                                             );
                                         })}

@@ -2,18 +2,44 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class BackendApi {
-  // If running on an Android Emulator, 10.0.2.2 points to your computer's localhost:8000
-  // If testing on a physical phone, change this to your laptop's local IP address (e.g., http://192.168.1.5:8000)
-  static const String serverUrl = "http://127.0.0.1:8000";
+  // Change this IP if running on a physical device on your local network
+  // Use 10.0.2.2 for Android Emulator, 127.0.0.1 for iOS/Desktop 
+  static const String serverUrl = String.fromEnvironment(
+    'BACKEND_URL',
+    defaultValue: "http://127.0.0.1:8000",
+  );
+
+
+  /// Sends paramedic GPS + ID to the backend every 5 seconds while patrolling
+  static Future<void> sendHeartbeat(
+    String paramedicId,
+    double lat,
+    double lon,
+  ) async {
+    try {
+      await http.post(
+        Uri.parse('$serverUrl/api/paramedic-heartbeat'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({"paramedic_id": paramedicId, "lat": lat, "lon": lon}),
+      );
+    } catch (e) {
+      print("Heartbeat Error: $e");
+    } // best-effort
+
+  }
+
   /// Locks the dispatch in the FastAPI server
-  static Future<Map<String, dynamic>> acceptDispatch(String incidentId, String ambulanceId) async {
+  static Future<Map<String, dynamic>> acceptDispatch(
+    String incidentId,
+    String ambulanceId,
+  ) async {
     try {
       final response = await http.post(
         Uri.parse('$serverUrl/api/accept-dispatch'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           "incident_id": incidentId,
-          "ambulance_id": ambulanceId
+          "ambulance_id": ambulanceId,
         }),
       );
       return jsonDecode(response.body);
@@ -21,26 +47,40 @@ class BackendApi {
       return {"status": "error", "message": "Failed to connect to server."};
     }
   }
-  
+
   /// Sends live GPS to the server
-  static Future<void> sendLocation(String incidentId, double lat, double lon) async {
+  static Future<void> sendLocation(
+    String incidentId,
+    double lat,
+    double lon,
+  ) async {
     try {
       await http.post(
         Uri.parse('$serverUrl/api/update-location'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({"incident_id": incidentId, "lat": lat, "lon": lon}),
       );
-    } catch (e) {}
+    } catch (e) {
+      print("Location Update Error: $e");
+    }
+
   }
-  /// Listens for new crashes from the Edge AI
-  static Future<Map<String, dynamic>> checkPendingDispatch() async {
+
+  /// Listens for new crashes from the Edge AI / Ambulance Tracking app
+  /// Pass paramedicId so the server only responds if this paramedic is the assigned one
+  static Future<Map<String, dynamic>> checkPendingDispatch(
+    String paramedicId,
+  ) async {
     try {
-      final response = await http.get(Uri.parse('$serverUrl/api/check-dispatch'));
+      final response = await http.get(
+        Uri.parse('$serverUrl/api/check-dispatch?paramedic_id=$paramedicId'),
+      );
       return jsonDecode(response.body);
     } catch (e) {
-      return {"status": "waiting"}; // Fail silently during polling if server is rebooting
+      return {"status": "waiting"};
     }
   }
+
   /// Triggers the AWS GenAI Triage summary via the backend
   static Future<Map<String, dynamic>> scanPatientId(String patientId) async {
     try {

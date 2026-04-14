@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/paramedic_dashboard.dart';
+import 'screens/landing_page.dart';
 
 void main() {
   runApp(const LifeLinkApp());
@@ -16,13 +16,13 @@ class LifeLinkApp extends StatelessWidget {
         primarySwatch: Colors.red,
         scaffoldBackgroundColor: Colors.grey[100],
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFC62828), // Deep emergency red
+          backgroundColor: Color(0xFFC62828),
           foregroundColor: Colors.white,
           elevation: 4,
         ),
       ),
-      home: const ParamedicDashboard(),
-      debugShowCheckedModeBanner: false, // Hides the annoying "DEBUG" banner for your presentation!
+      home: LandingPage(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }

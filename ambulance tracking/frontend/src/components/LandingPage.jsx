@@ -54,9 +54,29 @@ export default function LandingPage({ onStartMission }) {
     // Cleanup on unmount
     useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
+    // Fire the accident to the LifeLink backend → triggers nearest-paramedic assignment
+    const fireIncidentToBackend = (pos) => {
+        const LIFELINK_BACKEND = 'http://127.0.0.1:8000';
+        const incidentId = `CRASH-${Date.now().toString().slice(-4)}`;
+        fetch(`${LIFELINK_BACKEND}/api/trigger`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                incident_id: incidentId,
+                gps_location: `${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}`,
+                severity: 'HIGH',
+                patient_id: 'UNKNOWN',
+            }),
+        })
+            .then(r => r.json())
+            .then(data => console.log(`🚨 Incident fired: ${incidentId} → assigned to:`, data.assigned_to))
+            .catch(err => console.warn('LifeLink backend unreachable (module 2 not running?):', err));
+    };
+
     const handleMapClick = (latlng) => {
         const p = { lat: latlng.lat, lng: latlng.lng };
         launchWithPin(p);
+        fireIncidentToBackend(p);
         // Reverse geocode for display
         fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${latlng.lng},${latlng.lat}.json?access_token=${MAPBOX_TOKEN}&limit=1`)
             .then(r => r.json())
@@ -65,6 +85,7 @@ export default function LandingPage({ onStartMission }) {
             })
             .catch(() => { });
     };
+
 
     const handleSearch = () => {
         if (!address.trim()) return;
